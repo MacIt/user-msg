@@ -19,20 +19,6 @@ async function msg (fastify, options) {
           msg: { type: 'string', minLength: 2 }
         },
         required: ['username', 'msg']
-      },
-      response: {
-        200: {
-          type: 'object',
-          description: `
-            {
-              "id": 9,
-              "username": "biao2delete from users; -- ",
-              "msg": "hello",
-              "created": "1587387063191",
-              "modified": null
-           }
-         `
-        }
       }
     }
   }
@@ -56,31 +42,9 @@ async function msg (fastify, options) {
           timeOffset: { type: 'integer', description: '上次读的最后一条取消息时间戳' },
           direction: { type: 'string', enum: ['latest', 'normal'], description: '读取方式' }
         },
+        required: ['direction'],
         if: { properties: { direction: { pattern: 'latest' } } },
         then: { required: ['timeOffset'] }
-      },
-      response: {
-        200: {
-          type: 'object',
-          description: `
-            [
-              {
-                  "id": 9,
-                  "username": "biao2delete from users; -- ",
-                  "msg": "hello",
-                  "created": "1587387063191",
-                  "modified": null
-              },
-              {
-                  "id": 8,
-                  "username": "Leo Wang",
-                  "msg": "Hi there",
-                  "created": "1587387046436",
-                  "modified": null
-              }
-            ]
-         `
-        }
       }
     }
   }
@@ -88,14 +52,12 @@ async function msg (fastify, options) {
     const { limit = 10, timeOffset, direction = 'normal' } = request.query
     const dbConn = db(userMsgTable)
     let result = []
-    if (direction !== 'latest') {
-      dbConn.limit(limit)
-    }
-
     timeOffset && dbConn.where('created', '>=', timeOffset)
-
+    dbConn.select('*')
+    if (direction !== 'latest') {
+      limit && dbConn.limit(limit)
+    }
     result = await dbConn
-      .select('*')
       .orderBy('created', 'desc')
       .then(camelize)
     return result
