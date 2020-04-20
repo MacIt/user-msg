@@ -29,6 +29,9 @@ async function msg (fastify, options) {
       .insert({ username, msg, created: moment().valueOf() })
       .returning('*')
       .then(camelize)
+      .catch(err => {
+        reply.code(500).send(err)
+      })
     return res
   })
 
@@ -51,15 +54,17 @@ async function msg (fastify, options) {
   fastify.get('/user/messages', getOpts, async (request, reply) => {
     const { limit = 10, timeOffset, direction = 'normal' } = request.query
     const dbConn = db(userMsgTable)
-    let result = []
     timeOffset && dbConn.where('created', '>=', timeOffset)
     dbConn.select('*')
     if (direction !== 'latest') {
       limit && dbConn.limit(limit)
     }
-    result = await dbConn
+    let result = await dbConn
       .orderBy('created', 'desc')
       .then(camelize)
+      .catch(err => {
+        reply.code(500).send(err)
+      })
     return result
   })
 }
